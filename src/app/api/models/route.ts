@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { AVAILABLE_MODELS } from "../chat/route";
+import { getAvailableModels } from "../chat/route";
 
 export async function GET() {
-  return NextResponse.json({ models: AVAILABLE_MODELS });
+  return NextResponse.json({ models: getAvailableModels() });
 }

@@ -61,16 +61,34 @@ function getSystemPrompt(lang: unknown): string {
   return SYSTEM_PROMPT_RU;
 }
 
-export const AVAILABLE_MODELS = [
+const PRODUCTION_MODELS = [
   { id: "anthropic/claude-sonnet-4", name: "Claude Sonnet 4" },
+];
+
+const DEV_MODELS = [
+  { id: "anthropic/claude-sonnet-4", name: "Claude Sonnet 4" },
+  { id: "anthropic/claude-3.5-sonnet", name: "Claude 3.5 Sonnet" },
+  { id: "anthropic/claude-opus-4", name: "Claude Opus 4" },
   { id: "anthropic/claude-3.5-haiku", name: "Claude 3.5 Haiku" },
   { id: "openai/gpt-4o", name: "GPT-4o" },
   { id: "openai/gpt-4o-mini", name: "GPT-4o Mini" },
+  { id: "deepseek/deepseek-v3.2", name: "DeepSeek V3.2" },
+  { id: "deepseek/deepseek-chat", name: "DeepSeek Chat V3" },
+  { id: "deepseek/deepseek-r1", name: "DeepSeek R1" },
   { id: "google/gemini-2.0-flash-001", name: "Gemini 2.0 Flash" },
+  { id: "google/gemini-2.5-flash", name: "Gemini 2.5 Flash" },
   { id: "meta-llama/llama-3.3-70b-instruct", name: "Llama 3.3 70B" },
+  { id: "qwen/qwen-2.5-72b-instruct", name: "Qwen 2.5 72B" },
+  { id: "mistralai/mistral-large-2411", name: "Mistral Large" },
 ];
 
-const DEFAULT_MODEL = AVAILABLE_MODELS[0].id;
+const DEFAULT_MODEL = PRODUCTION_MODELS[0].id;
+
+function getAvailableModels() {
+  return process.env.NODE_ENV === "development" ? DEV_MODELS : PRODUCTION_MODELS;
+}
+
+export { getAvailableModels };
 
 const openrouter = new OpenAI({
   baseURL: "https://openrouter.ai/api/v1",
@@ -88,7 +106,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const selectedModel = model || DEFAULT_MODEL;
+    const allowedModels = getAvailableModels();
+    const modelIds = allowedModels.map((m) => m.id);
+    const requestedModel = model || DEFAULT_MODEL;
+    const selectedModel = modelIds.includes(requestedModel)
+      ? requestedModel
+      : DEFAULT_MODEL;
     const systemPrompt = getSystemPrompt(lang);
 
     const response = await openrouter.chat.completions.create({
