@@ -34,6 +34,13 @@ const TEXT = {
     chatSubtitle: "«Ты не тот, кем себя считаешь.»",
     emptyChat: "Говори. Зеркало покажет то, что ты прячешь.",
     inputPlaceholder: "Говори...",
+    holdToInit: "[ УДЕРЖИВАЙ ДЛЯ ИНИЦИАЦИИ АНАЛИЗА ]",
+    commitToTruth: "COMMIT TO TRUTH",
+    ghostPhrases: [
+      "дело не в деньгах...",
+      "ты ведь хочешь признания...",
+      "скажи правду самому себе...",
+    ],
   },
   uk: {
     brand: "Shadow Mirror",
@@ -54,6 +61,13 @@ const TEXT = {
     chatSubtitle: "«Ти не той, ким себе вважаєш.»",
     emptyChat: "Говори. Дзеркало покаже те, що ти ховаєш.",
     inputPlaceholder: "Говори...",
+    holdToInit: "[ УТРИМУЙ ДЛЯ ІНІЦІАЦІЇ АНАЛІЗУ ]",
+    commitToTruth: "COMMIT TO TRUTH",
+    ghostPhrases: [
+      "справа не в грошах...",
+      "ти ж хочеш визнання...",
+      "скажи правду самому собі...",
+    ],
   },
   en: {
     brand: "Shadow Mirror",
@@ -72,6 +86,13 @@ const TEXT = {
     chatSubtitle: "\"You are not who you think you are.\"",
     emptyChat: "Speak. The mirror will show what you hide.",
     inputPlaceholder: "Speak...",
+    holdToInit: "[ HOLD TO INITIATE ANALYSIS ]",
+    commitToTruth: "COMMIT TO TRUTH",
+    ghostPhrases: [
+      "it's not about the money...",
+      "you want recognition...",
+      "tell yourself the truth...",
+    ],
   },
 } as const;
 
@@ -84,15 +105,21 @@ function detectLang(): Lang {
 
 export default function Home() {
   const [mirrorOpen, setMirrorOpen] = useState(false);
+  const [initComplete, setInitComplete] = useState(false);
+  const [terminalLines, setTerminalLines] = useState<string[]>([]);
+  const [holdProgress, setHoldProgress] = useState(0);
   const [lang, setLang] = useState<Lang>("ru");
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const [ghostIndex, setGhostIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [models, setModels] = useState<ModelOption[]>([]);
   const [selectedModel, setSelectedModel] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const holdTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const holdStartRef = useRef<number>(0);
 
   const t = TEXT[lang];
 
@@ -124,6 +151,41 @@ export default function Home() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  const INIT_LINES = [
+    "> SIGNAL ACQUIRED...",
+    "> PATTERN DETECTION: ACTIVE",
+    "> LIE TOLERANCE: 0%",
+  ];
+
+  useEffect(() => {
+    if (!mirrorOpen) {
+      setInitComplete(false);
+      setTerminalLines([]);
+      return;
+    }
+    let i = 0;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const run = () => {
+      if (i < INIT_LINES.length) {
+        setTerminalLines((prev) => [...prev, INIT_LINES[i]]);
+        i++;
+        timers.push(setTimeout(run, 200));
+      } else {
+        timers.push(setTimeout(() => setInitComplete(true), 300));
+      }
+    };
+    timers.push(setTimeout(run, 100));
+    return () => timers.forEach(clearTimeout);
+  }, [mirrorOpen]);
+
+  useEffect(() => {
+    if (!initComplete || input.trim() || messages.length > 0) return;
+    const id = setInterval(() => {
+      setGhostIndex((prev) => (prev + 1) % t.ghostPhrases.length);
+    }, 4000);
+    return () => clearInterval(id);
+  }, [initComplete, input, messages.length, t.ghostPhrases.length]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -175,11 +237,43 @@ export default function Home() {
     }
   };
 
+  const hasMessages = messages.length > 0;
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit(e);
+      if (hasMessages) handleSubmit(e as unknown as FormEvent);
     }
+  };
+
+  const HOLD_DURATION_MS = 1500;
+
+  const canSubmit = input.trim();
+
+  const handleHoldStart = (e?: React.SyntheticEvent) => {
+    e?.preventDefault();
+    if (isLoading || !canSubmit) return;
+    holdStartRef.current = Date.now();
+    setHoldProgress(0);
+    holdTimerRef.current = setInterval(() => {
+      const elapsed = Date.now() - holdStartRef.current;
+      const p = Math.min(100, (elapsed / HOLD_DURATION_MS) * 100);
+      setHoldProgress(p);
+      if (p >= 100) {
+        if (holdTimerRef.current) clearInterval(holdTimerRef.current);
+        holdTimerRef.current = null;
+        handleSubmit({ preventDefault: () => {} } as FormEvent);
+        setHoldProgress(0);
+      }
+    }, 50);
+  };
+
+  const handleHoldEnd = () => {
+    if (holdTimerRef.current) {
+      clearInterval(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    setHoldProgress(0);
   };
 
   if (!mirrorOpen) {
@@ -384,28 +478,80 @@ export default function Home() {
           <div ref={messagesEndRef} />
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="border-t border-zinc-800 p-4 flex gap-3 items-end"
-        >
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={t.inputPlaceholder}
-            rows={1}
-            disabled={isLoading}
-            className="flex-1 bg-transparent border border-zinc-700 rounded-md px-4 py-3 text-sm text-zinc-200 placeholder-zinc-600 resize-none focus:outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900/50 transition-colors disabled:opacity-50"
-          />
-          <button
-            type="submit"
-            disabled={isLoading || !input.trim()}
-            className="px-4 py-3 text-sm bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            &rarr;
-          </button>
-        </form>
+        <div className="border-t border-zinc-800 p-4">
+          {!initComplete ? (
+            <div className="font-mono text-xs text-zinc-500 space-y-1 min-h-[120px]">
+              {terminalLines.map((line, i) => (
+                <div key={i} className="animate-fade-in">
+                  {line}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <form
+              onSubmit={hasMessages ? handleSubmit : (e) => e.preventDefault()}
+              className="space-y-3 animate-fade-in"
+            >
+              <div className="relative">
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={hasMessages ? t.inputPlaceholder : ""}
+                  rows={3}
+                  disabled={isLoading}
+                  className={`w-full bg-black border-0 border-b border-zinc-700 rounded-none px-4 py-3 text-sm text-zinc-200 font-mono resize-none focus:outline-none focus:border-b-2 focus:border-zinc-400 transition-colors disabled:opacity-50 ${hasMessages ? "placeholder-zinc-600" : "placeholder:transparent"}`}
+                />
+                {!hasMessages && !input.trim() && (
+                  <div
+                    className="absolute inset-0 flex items-start pt-3 pl-4 pointer-events-none font-mono text-sm transition-opacity duration-500"
+                    style={{ color: "#222" }}
+                    aria-hidden
+                  >
+                    {t.ghostPhrases[ghostIndex]}
+                  </div>
+                )}
+              </div>
+              {hasMessages ? (
+                <button
+                  type="submit"
+                  disabled={isLoading || !canSubmit}
+                  className="w-full py-3 text-xs uppercase tracking-widest font-mono bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed rounded-none transition-colors"
+                >
+                  &rarr;
+                </button>
+              ) : (
+                <div className="relative">
+                  <button
+                    type="button"
+                    disabled={isLoading || !canSubmit}
+                    onMouseDown={handleHoldStart}
+                    onMouseUp={handleHoldEnd}
+                    onMouseLeave={handleHoldEnd}
+                    onTouchStart={(e) => handleHoldStart(e)}
+                    onTouchEnd={(e) => { e.preventDefault(); handleHoldEnd(); }}
+                    onTouchCancel={handleHoldEnd}
+                    className="w-full py-4 text-xs uppercase tracking-widest font-mono bg-black border border-zinc-600 text-zinc-400 disabled:opacity-30 disabled:cursor-not-allowed rounded-none transition-colors hover:border-zinc-500 disabled:hover:border-zinc-600 relative overflow-hidden"
+                  >
+                    <span className="relative z-10">{t.holdToInit}</span>
+                    <div
+                      className="absolute inset-0 bg-zinc-800/50 transition-all duration-75"
+                      style={{ width: `${holdProgress}%` }}
+                    />
+                  </button>
+                  <div className="mt-1.5 font-mono text-[10px] text-zinc-600">
+                    {t.commitToTruth}{" "}
+                    <span className="text-zinc-500">
+                      {"█".repeat(Math.floor(holdProgress / 10))}
+                      {"░".repeat(10 - Math.floor(holdProgress / 10))}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </form>
+          )}
+        </div>
       </div>
 
       <footer className="mt-6 mb-4 text-zinc-700 text-xs text-center">
