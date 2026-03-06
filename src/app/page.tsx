@@ -112,6 +112,8 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [ghostIndex, setGhostIndex] = useState(0);
+  const [hint, setHint] = useState("");
+  const [hintDisplay, setHintDisplay] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [models, setModels] = useState<ModelOption[]>([]);
@@ -195,12 +197,28 @@ export default function Home() {
     }
   }, [input]);
 
+  useEffect(() => {
+    if (!hint) {
+      setHintDisplay("");
+      return;
+    }
+    setHintDisplay("");
+    let i = 0;
+    const id = setInterval(() => {
+      i++;
+      setHintDisplay((prev) => hint.slice(0, i));
+      if (i >= hint.length) clearInterval(id);
+    }, 40);
+    return () => clearInterval(id);
+  }, [hint]);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const trimmed = input.trim();
     if (!trimmed || isLoading) return;
 
     setError(null);
+    setHint("");
     const userMessage: Message = { role: "user", content: trimmed };
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
@@ -228,6 +246,7 @@ export default function Home() {
         ...updatedMessages,
         { role: "assistant", content: data.reply },
       ]);
+      setHint(data.hint || "");
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Something went wrong";
@@ -492,6 +511,12 @@ export default function Home() {
               onSubmit={hasMessages ? handleSubmit : (e) => e.preventDefault()}
               className="space-y-3 animate-fade-in"
             >
+              {hintDisplay && (
+                <p className="text-sm font-mono text-sky-200 animate-pulse">
+                  {hintDisplay}
+                  <span className="animate-pulse">|</span>
+                </p>
+              )}
               <div className="relative">
                 <textarea
                   ref={textareaRef}
