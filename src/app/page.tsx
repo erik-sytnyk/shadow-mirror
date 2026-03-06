@@ -41,6 +41,12 @@ const TEXT = {
       "ты ведь хочешь признания...",
       "скажи правду самому себе...",
     ],
+    protocolLines: [
+      "> ПРЕДУПРЕЖДЕНИЕ: СИСТЕМА НЕ ПРЕДОСТАВЛЯЕТ ПОДДЕРЖКУ.",
+      "> ТВОЕ СОГЛАСИЕ БУДЕТ РАСЦЕНЕНО КАК ФОРМА ЗАЩИТЫ.",
+      "> СОВЕТОВ НЕ БУДЕТ. ТОЛЬКО ПРЕПАРИРОВАНИЕ.",
+      "> ОТВЕТСТВЕННОСТЬ НЕ ПЕРЕДАЕТСЯ.",
+    ],
   },
   uk: {
     brand: "Shadow Mirror",
@@ -68,6 +74,12 @@ const TEXT = {
       "ти ж хочеш визнання...",
       "скажи правду самому собі...",
     ],
+    protocolLines: [
+      "> ПОПЕРЕДЖЕННЯ: СИСТЕМА НЕ НАДАЄ ПІДТРИМКИ.",
+      "> ТВІЙ ЗГОДА БУДЕ РОЗЦІНЕНА ЯК ФОРМА ЗАХИСТУ.",
+      "> ПОРАД НЕ БУДЕ. ЛИШЕ ПРЕПАРУВАННЯ.",
+      "> ВІДПОВІДАЛЬНІСТЬ НЕ ПЕРЕДАЄТЬСЯ.",
+    ],
   },
   en: {
     brand: "Shadow Mirror",
@@ -93,6 +105,12 @@ const TEXT = {
       "you want recognition...",
       "tell yourself the truth...",
     ],
+    protocolLines: [
+      "> WARNING: SYSTEM PROVIDES NO SUPPORT.",
+      "> YOUR CONSENT WILL BE INTERPRETED AS A DEFENSE MECHANISM.",
+      "> NO ADVICE. ONLY DISSECTION.",
+      "> RESPONSIBILITY IS NOT TRANSFERRED.",
+    ],
   },
 } as const;
 
@@ -104,6 +122,9 @@ function detectLang(): Lang {
 }
 
 export default function Home() {
+  const [protocolComplete, setProtocolComplete] = useState(false);
+  const [protocolLines, setProtocolLines] = useState<string[]>([]);
+  const [protocolPhase, setProtocolPhase] = useState<"signal" | "lang_select" | "warnings" | "noise" | "done">("signal");
   const [mirrorOpen, setMirrorOpen] = useState(false);
   const [initComplete, setInitComplete] = useState(false);
   const [terminalLines, setTerminalLines] = useState<string[]>([]);
@@ -139,6 +160,40 @@ export default function Home() {
   useEffect(() => {
     window.localStorage.setItem("shadow_mirror_lang", lang);
   }, [lang]);
+
+  useEffect(() => {
+    if (protocolPhase !== "signal") return;
+    const t = setTimeout(() => {
+      setProtocolLines(["> SIGNAL ACQUIRED..."]);
+      setProtocolPhase("lang_select");
+    }, 800);
+    return () => clearTimeout(t);
+  }, [protocolPhase]);
+
+  useEffect(() => {
+    if (protocolPhase !== "warnings") return;
+    const lines = TEXT[lang].protocolLines;
+    const warningCount = protocolLines.length - 1;
+    if (warningCount >= lines.length) {
+      setProtocolPhase("noise");
+      setTimeout(() => {
+        setProtocolComplete(true);
+        setProtocolPhase("done");
+      }, 400);
+      return;
+    }
+    const t = setTimeout(() => {
+      setProtocolLines((prev) => [...prev, lines[warningCount]]);
+    }, 2000);
+    return () => clearTimeout(t);
+  }, [protocolPhase, protocolLines.length, lang]);
+
+  const handleProtocolLangSelect = (l: Lang) => {
+    setLang(l);
+    window.localStorage.setItem("shadow_mirror_lang", l);
+    setProtocolPhase("warnings");
+    setProtocolLines((prev) => [...prev, TEXT[l].protocolLines[0]]);
+  };
 
   useEffect(() => {
     fetch("/api/models")
@@ -293,6 +348,57 @@ export default function Home() {
     }
     setHoldProgress(0);
   };
+
+  if (!protocolComplete) {
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center px-4 font-mono">
+        <div
+          className="text-center space-y-2 font-mono text-sm"
+          style={{ color: "rgba(217, 119, 6, 0.85)" }}
+        >
+          {protocolLines.map((line, i) => (
+            <div key={i} className="text-sm animate-fade-in">
+              {line}
+            </div>
+          ))}
+        </div>
+        {protocolPhase === "lang_select" && (
+          <div className="mt-8 flex gap-3">
+            <button
+              type="button"
+              onClick={() => handleProtocolLangSelect("ru")}
+              className="px-4 py-2 text-xs uppercase tracking-wider border border-zinc-600 text-amber-800/90 hover:border-amber-700/70 hover:text-amber-700 transition-colors"
+            >
+              [ RU ]
+            </button>
+            <button
+              type="button"
+              onClick={() => handleProtocolLangSelect("en")}
+              className="px-4 py-2 text-xs uppercase tracking-wider border border-zinc-600 text-amber-800/90 hover:border-amber-700/70 hover:text-amber-700 transition-colors"
+            >
+              [ EN ]
+            </button>
+            <button
+              type="button"
+              onClick={() => handleProtocolLangSelect("uk")}
+              className="px-4 py-2 text-xs uppercase tracking-wider border border-zinc-600 text-amber-800/90 hover:border-amber-700/70 hover:text-amber-700 transition-colors"
+            >
+              [ UA ]
+            </button>
+          </div>
+        )}
+        {protocolPhase === "noise" && (
+          <div
+            className="fixed inset-0 bg-white/20 noise-flash"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+            }}
+            aria-hidden
+          />
+        )}
+      </div>
+    );
+  }
 
   if (!mirrorOpen) {
     return (
