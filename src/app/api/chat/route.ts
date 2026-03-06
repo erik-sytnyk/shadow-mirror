@@ -59,7 +59,8 @@ function getSystemPrompt(lang: unknown): string {
 }
 
 const PRODUCTION_MODELS = [
-  { id: "anthropic/claude-sonnet-4", name: "Claude Sonnet 4" },
+  { id: "anthropic/claude-3.5-sonnet", name: "Claude 3.5 Sonnet" },
+  { id: "openai/gpt-4o", name: "GPT-4o" },
 ];
 
 const DEV_MODELS = [

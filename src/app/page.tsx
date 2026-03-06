@@ -117,7 +117,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [models, setModels] = useState<ModelOption[]>([]);
-  const [selectedModel, setSelectedModel] = useState("");
+  const [selectedModel, setSelectedModel] = useState("anthropic/claude-3.5-sonnet");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const holdTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -145,7 +145,6 @@ export default function Home() {
       .then((res) => res.json())
       .then((data) => {
         setModels(data.models);
-        if (data.models.length > 0) setSelectedModel(data.models[0].id);
       })
       .catch(() => {});
   }, []);
@@ -432,19 +431,30 @@ export default function Home() {
         <p className="text-zinc-500 italic text-sm">
           {t.chatSubtitle}
         </p>
-        {models.length > 0 && (
-          <select
-            value={selectedModel}
-            onChange={(e) => setSelectedModel(e.target.value)}
-            className="mt-4 bg-zinc-900 border border-zinc-700 text-zinc-400 text-xs rounded px-3 py-1.5 focus:outline-none focus:border-blue-900 cursor-pointer appearance-none"
+        <div className="mt-4 flex items-center justify-center gap-2 font-mono">
+          <button
+            type="button"
+            onClick={() => setSelectedModel("openai/gpt-4o")}
+            className={`px-4 py-2 text-xs uppercase tracking-wider border transition-all ${
+              selectedModel === "openai/gpt-4o"
+                ? "border-zinc-400 text-zinc-200 mirror-glow"
+                : "border-zinc-700 text-zinc-500 hover:border-zinc-600 hover:text-zinc-400"
+            }`}
           >
-            {models.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </select>
-        )}
+            [ GPT-4o ]
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedModel("anthropic/claude-3.5-sonnet")}
+            className={`px-4 py-2 text-xs uppercase tracking-wider border transition-all ${
+              selectedModel === "anthropic/claude-3.5-sonnet"
+                ? "border-zinc-400 text-zinc-200 mirror-glow"
+                : "border-zinc-700 text-zinc-500 hover:border-zinc-600 hover:text-zinc-400"
+            }`}
+          >
+            [ CLAUDE 3.5 ]
+          </button>
+        </div>
       </header>
 
       <div className="w-full max-w-2xl flex-1 flex flex-col border border-zinc-800 bg-zinc-900/30 rounded-lg shadow-2xl shadow-blue-900/20 mirror-glow overflow-hidden">
