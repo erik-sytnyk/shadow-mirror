@@ -4,7 +4,7 @@
 
 ### Added
 - Next.js 16 project with TypeScript, Tailwind CSS, App Router
-- Dark Mirror chat interface with OpenRouter API integration
+- Shadow Mirror chat interface with OpenRouter API integration
 - Multi-model support: Claude Sonnet 4, Claude 3.5 Haiku, GPT-4o, GPT-4o Mini, Gemini 2.0 Flash, Llama 3.3 70B
 - Model selector dropdown in chat header
 - System prompt: cold, clear, archetypal analysis protocol

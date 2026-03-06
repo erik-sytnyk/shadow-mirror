@@ -16,7 +16,7 @@ type Lang = "ru" | "en" | "uk";
 
 const TEXT = {
   ru: {
-    brand: "Dark Mirror",
+    brand: "Shadow Mirror",
     heroTitle: "Ты строишь ковчег, чтобы тебя взяли на борт",
     heroP1:
       "Ты думаешь, что твоя готовность отдавать, спасать и решать чужие проблемы — это сила. Ты называешь это ответственностью. Ты вкладываешь свои ресурсы, время и интеллект в других людей или проекты, ожидая, что однажды они это оценят. Ожидая, что твоя феноменальная полезность — это гарантия того, что тебя не оставят.",
@@ -36,7 +36,7 @@ const TEXT = {
     inputPlaceholder: "Говори...",
   },
   uk: {
-    brand: "Dark Mirror",
+    brand: "Shadow Mirror",
     heroTitle: "ТИ БУДУЄШ КОВЧЕГ, ЩОБ ТЕБЕ ВЗЯЛИ НА БОРТ",
     heroP1:
       "Ти думаєш, що твоя готовність віддавати, рятувати й вирішувати чужі проблеми — це сила. Ти називаєш це відповідальністю. Ти вкладаєш свої ресурси, час і інтелект в інших людей або проєкти, очікуючи, що одного дня вони це оцінять. Очікуючи, що твоя феноменальна корисність — це гарантія того, що тебе не залишать.",
@@ -56,7 +56,7 @@ const TEXT = {
     inputPlaceholder: "Говори...",
   },
   en: {
-    brand: "Dark Mirror",
+    brand: "Shadow Mirror",
     heroTitle: "YOU BUILD AN ARK SO THEY LET YOU ON BOARD",
     heroP1:
       "You think your willingness to give, to rescue, to solve other people's problems is strength. You call it responsibility. You invest your resources, time, and intellect into people or projects, expecting they will eventually value it. Expecting that your usefulness is a guarantee you won't be left behind.",
@@ -97,7 +97,7 @@ export default function Home() {
   const t = TEXT[lang];
 
   useEffect(() => {
-    const stored = window.localStorage.getItem("dark_mirror_lang");
+    const stored = window.localStorage.getItem("shadow_mirror_lang");
     if (stored === "ru" || stored === "en" || stored === "uk") {
       setLang(stored);
       return;
@@ -108,7 +108,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem("dark_mirror_lang", lang);
+    window.localStorage.setItem("shadow_mirror_lang", lang);
   }, [lang]);
 
   useEffect(() => {
@@ -243,7 +243,7 @@ export default function Home() {
 
           <div className="border border-zinc-800 bg-zinc-900/20 rounded-lg p-8 text-left space-y-3">
             <p className="text-sm leading-relaxed text-zinc-300">
-              <span className="text-zinc-100 font-medium">Dark Mirror</span>&nbsp;&mdash;
+              <span className="text-zinc-100 font-medium">Shadow Mirror</span>&nbsp;&mdash;
               {t.heroProductLead}
             </p>
             <p className="text-sm leading-relaxed text-zinc-400">

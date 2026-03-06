@@ -8,8 +8,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dark Mirror",
-  description: "Ты не тот, кем себя считаешь.",
+  title: "Shadow Mirror",
+  description: "Shadow Mirror — AI-интерфейс глубины. Ты не тот, кем себя считаешь. shadow-mirror.dev",
 };
 
 export default function RootLayout({
